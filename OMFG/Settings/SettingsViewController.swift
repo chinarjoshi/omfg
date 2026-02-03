@@ -10,6 +10,8 @@ final class SettingsViewController: UIViewController {
     private let remoteDeviceField = UITextField()
     private let saveButton = UIButton(type: .system)
 
+    var enableSwipeBack = false
+
     init(onComplete: @escaping () -> Void) {
         self.onComplete = onComplete
         super.init(nibName: nil, bundle: nil)
@@ -113,6 +115,10 @@ final class SettingsViewController: UIViewController {
             saveButton.topAnchor.constraint(equalTo: remoteDeviceField.bottomAnchor, constant: 40),
             saveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
+
+        if enableSwipeBack {
+            setupSwipeBack()
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -136,6 +142,16 @@ final class SettingsViewController: UIViewController {
                 Thread.sleep(forTimeInterval: 0.5)
             }
         }
+    }
+
+    private func setupSwipeBack() {
+        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUp))
+        swipeUp.direction = .up
+        view.addGestureRecognizer(swipeUp)
+    }
+
+    @objc private func handleSwipeUp() {
+        onComplete?()
     }
 
     @objc private func saveAndContinue() {

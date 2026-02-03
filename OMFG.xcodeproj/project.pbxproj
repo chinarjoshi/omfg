@@ -20,6 +20,8 @@
 		A100000D /* ConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000D; };
 		A100000F /* Syncthing.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000011; };
 		A1000010 /* Syncthing.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A2000011; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A1000011 /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000012; };
+		A1000012 /* NotePathResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +39,8 @@
 		A200000F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000010 /* OMFG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OMFG.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000011 /* Syncthing.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = Syncthing.xcframework; sourceTree = "<group>"; };
+		A2000012 /* NavigationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationState.swift; sourceTree = "<group>"; };
+		A2000013 /* NotePathResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotePathResolver.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -88,6 +92,7 @@
 				A4000003 /* App */,
 				A4000004 /* Sync */,
 				A4000005 /* Editor */,
+				A400000B /* Navigation */,
 				A4000006 /* DailyNote */,
 				A4000007 /* Settings */,
 				A4000008 /* Storage */,
@@ -123,6 +128,15 @@
 				A200000A /* AutoSaveController.swift */,
 			);
 			path = Editor;
+			sourceTree = "<group>";
+		};
+		A400000B /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				A2000012 /* NavigationState.swift */,
+				A2000013 /* NotePathResolver.swift */,
+			);
+			path = Navigation;
 			sourceTree = "<group>";
 		};
 		A4000006 /* DailyNote */ = {
@@ -226,6 +240,8 @@
 				A100000B /* DailyNoteManager.swift in Sources */,
 				A100000C /* SettingsViewController.swift in Sources */,
 				A100000D /* ConfigStore.swift in Sources */,
+				A1000011 /* NavigationState.swift in Sources */,
+				A1000012 /* NotePathResolver.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -238,6 +254,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AGVPW43D28;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -269,6 +286,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AGVPW43D28;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",

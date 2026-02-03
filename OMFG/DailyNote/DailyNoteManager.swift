@@ -7,7 +7,7 @@ final class DailyNoteManager {
     init(baseDirectory: URL) {
         self.baseDirectory = baseDirectory
         self.dateFormatter = DateFormatter()
-        self.dateFormatter.dateFormat = "MM-dd"
+        self.dateFormatter.dateFormat = "yyyy-MM-dd"
     }
 
     func todaysNotePath() -> URL {

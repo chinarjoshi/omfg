@@ -104,7 +104,12 @@ func Start(dir string) error {
 func defaultConfig(cfgPath string, myID protocol.DeviceID, evLogger events.Logger) (config.Wrapper, error) {
 	newCfg := config.New(myID)
 	newCfg.GUI.Enabled = false
-	return config.Wrap(cfgPath, newCfg, myID, evLogger), nil
+	wrapper := config.Wrap(cfgPath, newCfg, myID, evLogger)
+	// Save initial config to disk
+	if err := wrapper.Save(); err != nil {
+		return nil, err
+	}
+	return wrapper, nil
 }
 
 func Stop() {

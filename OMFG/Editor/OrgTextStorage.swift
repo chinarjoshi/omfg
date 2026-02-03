@@ -50,4 +50,22 @@ final class OrgTextStorage: NSTextStorage {
             }
         }
     }
+
+    static func attributedString(from text: String) -> NSAttributedString {
+        let syntaxRules = OrgSyntaxRules()
+        let result = NSMutableAttributedString(string: text, attributes: [
+            .font: UIFont.monospacedSystemFont(ofSize: 16, weight: .regular),
+            .foregroundColor: UIColor.white
+        ])
+
+        let range = NSRange(location: 0, length: text.count)
+        for rule in syntaxRules.all {
+            rule.pattern.enumerateMatches(in: text, range: range) { match, _, _ in
+                guard let matchRange = match?.range else { return }
+                result.addAttributes(rule.attributes, range: matchRange)
+            }
+        }
+
+        return result
+    }
 }

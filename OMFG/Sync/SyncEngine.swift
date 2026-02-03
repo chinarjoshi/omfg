@@ -80,7 +80,7 @@ final class SyncEngine {
         #endif
     }
 
-    private func applyConfig() {
+    func applyConfig() {
         #if canImport(Syncthing)
         let config = ConfigStore.shared
         guard let folderID = config.folderID, let folderPath = config.folderPath else { return }

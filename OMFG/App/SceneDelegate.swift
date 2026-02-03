@@ -5,6 +5,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     private let syncEngine = SyncEngine.shared
     private let configStore = ConfigStore.shared
 
+    private var editorViewController: EditorViewController?
+    private var settingsViewController: SettingsViewController?
+
     func scene(
         _ scene: UIScene,
         willConnectTo session: UISceneSession,
@@ -14,11 +17,15 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window = UIWindow(windowScene: windowScene)
 
         if configStore.isConfigured {
-            window?.rootViewController = createEditorViewController()
+            let editor = createEditorViewController()
+            editorViewController = editor
+            window?.rootViewController = editor
         } else {
-            window?.rootViewController = SettingsViewController { [weak self] in
+            let settings = SettingsViewController { [weak self] in
                 self?.transitionToEditor()
             }
+            settingsViewController = settings
+            window?.rootViewController = settings
         }
 
         window?.makeKeyAndVisible()
@@ -50,17 +57,60 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     private func transitionToEditor() {
-        window?.rootViewController = createEditorViewController()
-        startSyncAsync()
+        let editor = createEditorViewController()
+        editorViewController = editor
+        settingsViewController = nil
+
+        UIView.transition(
+            with: window!,
+            duration: 0.3,
+            options: .transitionCrossDissolve
+        ) {
+            self.window?.rootViewController = editor
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            for _ in 0..<100 {
+                if self?.syncEngine.isRunning == true {
+                    self?.syncEngine.applyConfig()
+                    return
+                }
+                Thread.sleep(forTimeInterval: 0.1)
+            }
+        }
+    }
+
+    private func transitionToSettings() {
+        let settings = SettingsViewController { [weak self] in
+            self?.transitionBackToEditor()
+        }
+        settings.enableSwipeBack = true
+        settingsViewController = settings
+        window?.rootViewController = settings
+    }
+
+    private func transitionBackToEditor() {
+        guard let editor = editorViewController else {
+            transitionToEditor()
+            return
+        }
+
+        settingsViewController = nil
+        editor.returnFromSettings()
+        window?.rootViewController = editor
     }
 
     private func createEditorViewController() -> EditorViewController {
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let dailyNoteManager = DailyNoteManager(baseDirectory: documentsURL)
-        return EditorViewController(
-            dailyNoteManager: dailyNoteManager,
+        let pathResolver = NotePathResolver(baseDirectory: documentsURL)
+        let editor = EditorViewController(
+            pathResolver: pathResolver,
             autoSaveController: AutoSaveController(),
             fileWatcher: FileWatcher()
         )
+        editor.onRequestSettings = { [weak self] in
+            self?.transitionToSettings()
+        }
+        return editor
     }
 }
