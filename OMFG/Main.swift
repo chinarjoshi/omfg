@@ -1,5 +1,6 @@
 import UIKit
 import Syncthing
+import AppIntents
 
 // MARK: - Config
 
@@ -216,5 +217,63 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             self?.transitionToSettings()
         }
         return editor
+    }
+}
+
+// MARK: - App Intents
+
+@available(iOS 16.0, *)
+struct OpenDailyNoteIntent: AppIntent {
+    static var title: LocalizedStringResource = "Open Daily Note"
+    static var description = IntentDescription("Opens today's daily note in OMFG")
+    static var openAppWhenRun: Bool = true
+
+    func perform() async throws -> some IntentResult {
+        return .result()
+    }
+}
+
+@available(iOS 16.0, *)
+struct QuickNoteIntent: AppIntent {
+    static var title: LocalizedStringResource = "Quick Note"
+    static var description = IntentDescription("Append a quick note to today's daily note")
+    static var openAppWhenRun: Bool = false
+
+    @Parameter(title: " ")
+    var note: String
+
+    func perform() async throws -> some IntentResult {
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let dailyFolder = documentsURL.appendingPathComponent("daily", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dailyFolder, withIntermediateDirectories: true)
+
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day], from: Date())
+        let filename = String(format: "%04d-%02d-%02d.org", components.year!, components.month!, components.day!)
+        let fileURL = dailyFolder.appendingPathComponent(filename)
+
+        var content = (try? String(contentsOf: fileURL, encoding: .utf8)) ?? ""
+        if !content.isEmpty && !content.hasSuffix("\n") {
+            content += "\n"
+        }
+        content += note + "\n"
+        try content.write(to: fileURL, atomically: true, encoding: .utf8)
+
+        return .result()
+    }
+}
+
+@available(iOS 16.0, *)
+struct OMFGShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: QuickNoteIntent(),
+            phrases: [
+                "Quick note in \(.applicationName)",
+                "Add note to \(.applicationName)"
+            ],
+            shortTitle: "Quick Note",
+            systemImageName: "square.and.pencil"
+        )
     }
 }
