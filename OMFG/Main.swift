@@ -167,6 +167,14 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             name: .quickCaptureRequested,
             object: nil
         )
+
+        // Handle URL if app was launched from widget
+        if let url = connectionOptions.urlContexts.first?.url,
+           url.scheme == "omfg" && url.host == "photonote" {
+            DispatchQueue.main.async { [weak self] in
+                self?.handleQuickCapture()
+            }
+        }
     }
 
     @objc private func handleQuickCapture() {
@@ -196,6 +204,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
         backgroundSyncEndWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: workItem)
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard let url = URLContexts.first?.url else { return }
+        if url.scheme == "omfg" && url.host == "photonote" {
+            handleQuickCapture()
+        }
     }
 
     private func startSyncAsync() {
