@@ -36,8 +36,8 @@ final class QuickCaptureViewController: UIViewController, CLLocationManagerDeleg
         super.viewDidLoad()
         view.backgroundColor = .black
         setupUI()
-        checkCameraAuthorization()
         setupLocation()
+        checkCameraAuthorization()
     }
 
     private func setupLocation() {
@@ -65,7 +65,6 @@ final class QuickCaptureViewController: UIViewController, CLLocationManagerDeleg
                 }
             }
         default:
-            // Show error - camera not available
             let label = UILabel()
             label.text = "Camera access required"
             label.textColor = .white
