@@ -166,6 +166,11 @@ final class EditorViewController: UIViewController {
         fatalError()
     }
 
+    deinit {
+        stopWatchingFile()
+        NotificationCenter.default.removeObserver(self)
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
@@ -262,7 +267,6 @@ final class EditorViewController: UIViewController {
 
         if newState.currentDate != currentState.currentDate {
             textView.resignFirstResponder()
-            saveCurrentNoteIfNeeded()
             loadNote(for: newState)
         }
     }
@@ -441,7 +445,12 @@ final class EditorViewController: UIViewController {
 
         let currentSelection = textView.selectedRange
         textStorage.replaceCharacters(in: NSRange(location: 0, length: textStorage.length), with: content)
-        textView.selectedRange = currentSelection
+
+        // Clamp selection to valid range
+        let maxLocation = textStorage.length
+        let clampedLocation = min(currentSelection.location, maxLocation)
+        let clampedLength = min(currentSelection.length, maxLocation - clampedLocation)
+        textView.selectedRange = NSRange(location: clampedLocation, length: clampedLength)
     }
 }
 
@@ -503,10 +512,10 @@ extension EditorViewController: UITextViewDelegate {
 
     private func animateNavigation(to level: NoteLevel, direction: NavigationDirection) {
         textView.resignFirstResponder()
-        saveCurrentNoteIfNeeded()
 
         // Handle settings specially
         if level == .settings {
+            saveCurrentNoteIfNeeded()
             currentState.level = level
             onRequestSettings?()
             return

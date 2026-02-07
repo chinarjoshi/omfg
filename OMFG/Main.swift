@@ -133,6 +133,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     private var editorViewController: EditorViewController?
     private var settingsViewController: SettingsViewController?
+    private var backgroundSyncEndWorkItem: DispatchWorkItem?
 
     func scene(
         _ scene: UIScene,
@@ -162,6 +163,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
+        backgroundSyncEndWorkItem?.cancel()
+        backgroundSyncEndWorkItem = nil
         startSyncAsync()
         editorViewController?.reloadFromDisk()
     }
@@ -171,9 +174,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+        backgroundSyncEndWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
             self?.syncEngine.endBackgroundSync()
         }
+        backgroundSyncEndWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: workItem)
     }
 
     private func startSyncAsync() {
@@ -258,7 +264,7 @@ struct QuickNoteIntent: AppIntent {
             content += "\n"
         }
         content += note + "\n"
-        try? content.write(to: fileURL, atomically: true, encoding: .utf8)
+        try content.write(to: fileURL, atomically: true, encoding: .utf8)
 
         return .result()
     }
