@@ -7,40 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A1000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001; };
-		A1000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002; };
-		A1000004 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000004; };
-		A1000006 /* FileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006; };
-		A1000007 /* EditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000007; };
-		A1000008 /* OrgTextStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008; };
-		A1000009 /* OrgSyntaxRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009; };
-		A100000A /* AutoSaveController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000A; };
-		A100000B /* DailyNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000B; };
-		A100000C /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000C; };
-		A100000D /* ConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000D; };
+		A1000020 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000020; };
+		A1000021 /* Editor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000021; };
+		A1000022 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000022; };
 		A100000F /* Syncthing.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000011; };
 		A1000010 /* Syncthing.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A2000011; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		A1000011 /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000012; };
-		A1000012 /* NotePathResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A2000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		A2000002 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		A2000004 /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngine.swift; sourceTree = "<group>"; };
-		A2000006 /* FileWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileWatcher.swift; sourceTree = "<group>"; };
-		A2000007 /* EditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewController.swift; sourceTree = "<group>"; };
-		A2000008 /* OrgTextStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrgTextStorage.swift; sourceTree = "<group>"; };
-		A2000009 /* OrgSyntaxRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrgSyntaxRules.swift; sourceTree = "<group>"; };
-		A200000A /* AutoSaveController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSaveController.swift; sourceTree = "<group>"; };
-		A200000B /* DailyNoteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyNoteManager.swift; sourceTree = "<group>"; };
-		A200000C /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
-		A200000D /* ConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigStore.swift; sourceTree = "<group>"; };
+		A2000020 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
+		A2000021 /* Editor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editor.swift; sourceTree = "<group>"; };
+		A2000022 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		A200000F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000010 /* OMFG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OMFG.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000011 /* Syncthing.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = Syncthing.xcframework; sourceTree = "<group>"; };
-		A2000012 /* NavigationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationState.swift; sourceTree = "<group>"; };
-		A2000013 /* NotePathResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotePathResolver.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -89,78 +69,12 @@
 		A4000002 /* OMFG */ = {
 			isa = PBXGroup;
 			children = (
-				A4000003 /* App */,
-				A4000004 /* Sync */,
-				A4000005 /* Editor */,
-				A400000B /* Navigation */,
-				A4000006 /* DailyNote */,
-				A4000007 /* Settings */,
-				A4000008 /* Storage */,
+				A2000020 /* Main.swift */,
+				A2000021 /* Editor.swift */,
+				A2000022 /* Settings.swift */,
 				A200000F /* Info.plist */,
 			);
 			path = OMFG;
-			sourceTree = "<group>";
-		};
-		A4000003 /* App */ = {
-			isa = PBXGroup;
-			children = (
-				A2000001 /* AppDelegate.swift */,
-				A2000002 /* SceneDelegate.swift */,
-			);
-			path = App;
-			sourceTree = "<group>";
-		};
-		A4000004 /* Sync */ = {
-			isa = PBXGroup;
-			children = (
-				A2000004 /* SyncEngine.swift */,
-				A2000006 /* FileWatcher.swift */,
-			);
-			path = Sync;
-			sourceTree = "<group>";
-		};
-		A4000005 /* Editor */ = {
-			isa = PBXGroup;
-			children = (
-				A2000007 /* EditorViewController.swift */,
-				A2000008 /* OrgTextStorage.swift */,
-				A2000009 /* OrgSyntaxRules.swift */,
-				A200000A /* AutoSaveController.swift */,
-			);
-			path = Editor;
-			sourceTree = "<group>";
-		};
-		A400000B /* Navigation */ = {
-			isa = PBXGroup;
-			children = (
-				A2000012 /* NavigationState.swift */,
-				A2000013 /* NotePathResolver.swift */,
-			);
-			path = Navigation;
-			sourceTree = "<group>";
-		};
-		A4000006 /* DailyNote */ = {
-			isa = PBXGroup;
-			children = (
-				A200000B /* DailyNoteManager.swift */,
-			);
-			path = DailyNote;
-			sourceTree = "<group>";
-		};
-		A4000007 /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				A200000C /* SettingsViewController.swift */,
-			);
-			path = Settings;
-			sourceTree = "<group>";
-		};
-		A4000008 /* Storage */ = {
-			isa = PBXGroup;
-			children = (
-				A200000D /* ConfigStore.swift */,
-			);
-			path = Storage;
 			sourceTree = "<group>";
 		};
 		A4000010 /* Products */ = {
@@ -229,19 +143,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1000001 /* AppDelegate.swift in Sources */,
-				A1000002 /* SceneDelegate.swift in Sources */,
-				A1000004 /* SyncEngine.swift in Sources */,
-				A1000006 /* FileWatcher.swift in Sources */,
-				A1000007 /* EditorViewController.swift in Sources */,
-				A1000008 /* OrgTextStorage.swift in Sources */,
-				A1000009 /* OrgSyntaxRules.swift in Sources */,
-				A100000A /* AutoSaveController.swift in Sources */,
-				A100000B /* DailyNoteManager.swift in Sources */,
-				A100000C /* SettingsViewController.swift in Sources */,
-				A100000D /* ConfigStore.swift in Sources */,
-				A1000011 /* NavigationState.swift in Sources */,
-				A1000012 /* NotePathResolver.swift in Sources */,
+				A1000020 /* Main.swift in Sources */,
+				A1000021 /* Editor.swift in Sources */,
+				A1000022 /* Settings.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
