@@ -11,6 +11,8 @@
 		A1000021 /* Editor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000021; };
 		A1000022 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000022; };
 		A1000024 /* QuickCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000024; };
+		A1000025 /* WorkoutTransformer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000025; };
+		C1000001 /* WorkoutLiner in Frameworks */ = {isa = PBXBuildFile; productRef = C2000001; };
 		A100000F /* Syncthing.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000011; };
 		A1000010 /* Syncthing.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A2000011; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A1000023 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000023; };
@@ -59,6 +61,7 @@
 		A2000021 /* Editor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editor.swift; sourceTree = "<group>"; };
 		A2000022 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		A2000024 /* QuickCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCapture.swift; sourceTree = "<group>"; };
+		A2000025 /* WorkoutTransformer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTransformer.swift; sourceTree = "<group>"; };
 		A2000023 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A200000F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000010 /* OMFG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OMFG.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -74,6 +77,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A100000F /* Syncthing.xcframework in Frameworks */,
+				C1000001 /* WorkoutLiner in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +116,7 @@
 				A2000021 /* Editor.swift */,
 				A2000022 /* Settings.swift */,
 				A2000024 /* QuickCapture.swift */,
+				A2000025 /* WorkoutTransformer.swift */,
 				A2000023 /* Assets.xcassets */,
 				A200000F /* Info.plist */,
 			);
@@ -155,6 +160,9 @@
 				B4000003 /* PBXTargetDependency */,
 			);
 			name = OMFG;
+			packageProductDependencies = (
+				C2000001 /* WorkoutLiner */,
+			);
 			productName = OMFG;
 			productReference = A2000010 /* OMFG.app */;
 			productType = "com.apple.product-type.application";
@@ -204,6 +212,9 @@
 			);
 			mainGroup = A4000001;
 			productRefGroup = A4000010 /* Products */;
+			packageReferences = (
+				C3000001 /* XCLocalSwiftPackageReference "WorkoutLiner" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -241,6 +252,7 @@
 				A1000021 /* Editor.swift in Sources */,
 				A1000022 /* Settings.swift in Sources */,
 				A1000024 /* QuickCapture.swift in Sources */,
+				A1000025 /* WorkoutTransformer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -521,6 +533,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C3000001 /* XCLocalSwiftPackageReference "WorkoutLiner" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = WorkoutLiner;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C2000001 /* WorkoutLiner */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WorkoutLiner;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 	};
 	rootObject = A8000001 /* Project object */;
