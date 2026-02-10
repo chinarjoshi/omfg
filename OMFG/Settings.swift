@@ -5,8 +5,10 @@ final class SettingsViewController: UIViewController {
     private var onComplete: (() -> Void)?
 
     private let deviceIDLabel = UILabel()
+    private var fullDeviceID = ""
     private let folderIDField = UITextField()
     private let remoteDeviceField = UITextField()
+    private let logTextView = UITextView()
 
     var enableSwipeBack = false
 
@@ -33,14 +35,31 @@ final class SettingsViewController: UIViewController {
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
         ])
 
-        stack.addArrangedSubview(label("OMFG Settings", font: .boldSystemFont(ofSize: 24)))
+        stack.addArrangedSubview(label("Settings", font: .boldSystemFont(ofSize: 24)))
         stack.addArrangedSubview(spacer(22))
-        stack.addArrangedSubview(label("This Device ID:", font: .preferredFont(forTextStyle: .headline)))
+        stack.addArrangedSubview(label("Device ID:", font: .preferredFont(forTextStyle: .headline)))
+
+        let deviceIDRow = UIStackView()
+        deviceIDRow.axis = .horizontal
+        deviceIDRow.spacing = 8
+        deviceIDRow.alignment = .center
+
         deviceIDLabel.text = "Starting..."
         deviceIDLabel.font = .systemFont(ofSize: 11, weight: .regular)
         deviceIDLabel.textColor = .lightGray
-        deviceIDLabel.numberOfLines = 0
-        stack.addArrangedSubview(deviceIDLabel)
+        deviceIDLabel.lineBreakMode = .byTruncatingTail
+        deviceIDLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        deviceIDRow.addArrangedSubview(deviceIDLabel)
+
+        let copyButton = UIButton(type: .system)
+        copyButton.setTitle("Copy", for: .normal)
+        copyButton.titleLabel?.font = .systemFont(ofSize: 14)
+        copyButton.addTarget(self, action: #selector(copyDeviceID), for: .touchUpInside)
+        copyButton.setContentHuggingPriority(.required, for: .horizontal)
+        copyButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        deviceIDRow.addArrangedSubview(copyButton)
+
+        stack.addArrangedSubview(deviceIDRow)
         stack.addArrangedSubview(spacer(16))
         stack.addArrangedSubview(label("Folder ID:", font: .preferredFont(forTextStyle: .headline)))
         stack.addArrangedSubview(field(folderIDField, placeholder: "Enter folder ID"))
@@ -54,6 +73,22 @@ final class SettingsViewController: UIViewController {
         saveButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
         saveButton.addTarget(self, action: #selector(saveAndContinue), for: .touchUpInside)
         stack.addArrangedSubview(saveButton)
+
+        stack.addArrangedSubview(spacer(32))
+        stack.addArrangedSubview(label("Sync Log:", font: .preferredFont(forTextStyle: .headline)))
+
+        logTextView.isEditable = false
+        logTextView.backgroundColor = UIColor(white: 0.1, alpha: 1)
+        logTextView.textColor = .lightGray
+        logTextView.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+        logTextView.layer.cornerRadius = 8
+        logTextView.heightAnchor.constraint(equalToConstant: 150).isActive = true
+        stack.addArrangedSubview(logTextView)
+
+        syncEngine.onLogUpdate = { [weak self] in
+            self?.updateLogView()
+        }
+        updateLogView()
 
         if enableSwipeBack {
             let swipe = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUp))
@@ -89,14 +124,49 @@ final class SettingsViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+
+        // Load saved values
+        let defaults = UserDefaults.standard
+        if let folderID = defaults.folderID {
+            folderIDField.text = folderID
+        }
+        if let remoteDeviceID = defaults.remoteDeviceID {
+            remoteDeviceField.text = remoteDeviceID
+        }
+
+        // Set up device ID callback - will update when available
+        syncEngine.onDeviceIDUpdate = { [weak self] id in
+            self?.fullDeviceID = id
+            self?.deviceIDLabel.text = id
+        }
+
+        // Start polling immediately
+        syncEngine.startEventPolling()
+
+        // Start sync in background
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             self?.syncEngine.start()
-            let deviceID = self?.syncEngine.deviceID ?? ""
-            DispatchQueue.main.async { self?.deviceIDLabel.text = deviceID }
         }
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        syncEngine.stopEventPolling()
+    }
+
     @objc private func handleSwipeUp() { onComplete?() }
+
+    @objc private func copyDeviceID() {
+        UIPasteboard.general.string = fullDeviceID
+    }
+
+    private func updateLogView() {
+        logTextView.text = syncEngine.logs.joined(separator: "\n")
+        if !logTextView.text.isEmpty {
+            let bottom = NSRange(location: logTextView.text.count, length: 0)
+            logTextView.scrollRangeToVisible(bottom)
+        }
+    }
 
     @objc private func saveAndContinue() {
         guard let folderID = folderIDField.text, !folderID.isEmpty else { return }

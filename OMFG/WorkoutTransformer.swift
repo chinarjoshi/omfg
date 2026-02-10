@@ -3,62 +3,43 @@ import WorkoutLiner
 
 final class WorkoutTransformer {
     private weak var textStorage: NSTextStorage?
-    private var previousParagraphRange: NSRange?
 
     init(textStorage: NSTextStorage) {
         self.textStorage = textStorage
     }
 
-    /// Returns the range of an inserted table if transformation occurred, nil otherwise
-    func selectionChanged(to position: Int) -> NSRange? {
+    /// Called on text change. Returns table range if transformation occurred.
+    func textChanged() -> NSRange? {
         guard let textStorage = textStorage else { return nil }
         let text = textStorage.string as NSString
 
-        let currentParagraph = paragraphRange(in: text, at: position)
+        // Check if last two characters are \n\n
+        guard text.length >= 2 else { return nil }
+        let lastTwo = text.substring(with: NSRange(location: text.length - 2, length: 2))
+        guard lastTwo == "\n\n" else { return nil }
 
-        var insertedTableRange: NSRange?
-        if let prevRange = previousParagraphRange,
-           currentParagraph?.location != prevRange.location {
-            insertedTableRange = transformIfNeeded(in: prevRange, text: text)
-        }
+        // Find the paragraph before the double newline
+        let paragraphEnd = text.length - 2
+        guard paragraphEnd > 0 else { return nil }
 
-        previousParagraphRange = currentParagraph
-        return insertedTableRange
-    }
-
-    private func paragraphRange(in text: NSString, at position: Int) -> NSRange? {
-        guard position <= text.length else { return nil }
-
+        // Find paragraph start (previous \n\n or start of text)
+        var paragraphStart = paragraphEnd
         let str = text as String
-
-        // Find block boundaries (separated by blank lines: \n\n)
-        var start = position
-        while start > 0 {
-            let idx = str.index(str.startIndex, offsetBy: start - 1)
-            if start >= 2 {
-                let prevIdx = str.index(str.startIndex, offsetBy: start - 2)
+        while paragraphStart > 0 {
+            if paragraphStart >= 2 {
+                let idx = str.index(str.startIndex, offsetBy: paragraphStart - 1)
+                let prevIdx = str.index(str.startIndex, offsetBy: paragraphStart - 2)
                 if str[prevIdx] == "\n" && str[idx] == "\n" {
                     break
                 }
             }
-            start -= 1
+            paragraphStart -= 1
         }
 
-        var end = position
-        while end < text.length - 1 {
-            let idx = str.index(str.startIndex, offsetBy: end)
-            let nextIdx = str.index(str.startIndex, offsetBy: end + 1)
-            if str[idx] == "\n" && str[nextIdx] == "\n" {
-                end += 1
-                break
-            }
-            end += 1
-        }
-        if end < text.length {
-            end = min(end + 1, text.length)
-        }
+        let range = NSRange(location: paragraphStart, length: paragraphEnd - paragraphStart)
+        guard range.length > 0 else { return nil }
 
-        return NSRange(location: start, length: end - start)
+        return transformIfNeeded(in: range, text: text)
     }
 
     /// Returns the range of the inserted table if transformation occurred

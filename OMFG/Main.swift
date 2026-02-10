@@ -46,6 +46,17 @@ final class SyncEngine {
 
     private let dataDirectory: URL
     private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+    private(set) var logs: [String] = []
+    var onLogUpdate: (() -> Void)?
+    private var eventPollTimer: Timer?
+
+    private func log(_ message: String) {
+        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+        let entry = "[\(timestamp)] \(message)"
+        logs.append(entry)
+        if logs.count > 100 { logs.removeFirst() }
+        DispatchQueue.main.async { self.onLogUpdate?() }
+    }
 
     private init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -57,13 +68,16 @@ final class SyncEngine {
     var deviceID: String { LibsyncthingGetDeviceID() }
 
     func start() {
-        guard !isRunning else { return }
+        if isRunning {
+            applyConfig()
+            return
+        }
         var error: NSError?
         let success = LibsyncthingStart(dataDirectory.path, &error)
         if success {
             applyConfig()
         } else if let error = error {
-            print("Sync start failed: \(error)")
+            log("Start failed: \(error.localizedDescription)")
         }
     }
 
@@ -90,15 +104,69 @@ final class SyncEngine {
         LibsyncthingRescan(folderID, nil)
     }
 
+    func startEventPolling() {
+        eventPollTimer?.invalidate()
+        eventPollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            DispatchQueue.global(qos: .utility).async {
+                self.pollEvents()
+                self.checkDeviceID()
+            }
+        }
+    }
+
+    func stopEventPolling() {
+        eventPollTimer?.invalidate()
+        eventPollTimer = nil
+    }
+
+    private func pollEvents() {
+        let events = LibsyncthingGetEvents()
+        if events.isEmpty {
+            // Still trigger UI update so we see Swift-side logs
+            DispatchQueue.main.async { self.onLogUpdate?() }
+            return
+        }
+        for line in events.components(separatedBy: "\n") where !line.isEmpty {
+            logs.append(line)
+            if logs.count > 100 { logs.removeFirst() }
+        }
+        DispatchQueue.main.async { self.onLogUpdate?() }
+    }
+
+    var onDeviceIDUpdate: ((String) -> Void)?
+
+    private func checkDeviceID() {
+        let id = deviceID
+        if !id.isEmpty {
+            DispatchQueue.main.async { self.onDeviceIDUpdate?(id) }
+        }
+    }
+
     func applyConfig() {
         let defaults = UserDefaults.standard
-        guard let folderID = defaults.folderID, let folderPath = defaults.folderPath else { return }
+        guard let folderID = defaults.folderID, let folderPath = defaults.folderPath else {
+            return
+        }
 
-        LibsyncthingSetFolder(folderID, folderPath, nil)
+        var folderErr: NSError?
+        LibsyncthingSetFolder(folderID, folderPath, &folderErr)
+        if let err = folderErr {
+            log("SetFolder error: \(err.localizedDescription)")
+        }
 
         if let remoteID = defaults.remoteDeviceID {
-            LibsyncthingAddDevice(remoteID, defaults.remoteDeviceName ?? "Remote", nil)
-            LibsyncthingShareFolderWithDevice(folderID, remoteID, nil)
+            var deviceErr: NSError?
+            LibsyncthingAddDevice(remoteID, defaults.remoteDeviceName ?? "Remote", &deviceErr)
+            if let err = deviceErr {
+                log("AddDevice error: \(err.localizedDescription)")
+            }
+
+            var shareErr: NSError?
+            LibsyncthingShareFolderWithDevice(folderID, remoteID, &shareErr)
+            if let err = shareErr {
+                log("ShareFolder error: \(err.localizedDescription)")
+            }
         }
     }
 }

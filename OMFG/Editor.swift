@@ -555,15 +555,16 @@ extension EditorViewController: UITextViewDelegate {
         }
         previousTableRange = currentTableRange
 
-        // Workout transformation (auto-format table if one was inserted)
-        if let tableRange = workoutTransformer.selectionChanged(to: cursorPosition) {
-            formatTable(in: tableRange)
-        }
     }
 
     func textViewDidChange(_ textView: UITextView) {
         guard let path = currentFilePath else { return }
         scheduleAutoSave(content: textStorage.string, to: path)
+
+        // Workout transformation on double newline
+        if let tableRange = workoutTransformer.textChanged() {
+            formatTable(in: tableRange)
+        }
 
         if let selectedRange = textView.selectedTextRange {
             var caretRect = textView.caretRect(for: selectedRange.end)
