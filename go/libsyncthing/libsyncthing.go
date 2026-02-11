@@ -76,12 +76,23 @@ func Start(dir string) error {
 
 	cfgPath := filepath.Join(dataDir, "config.xml")
 
-	// Always start fresh - delete old config that may have bad networking settings
-	os.Remove(cfgPath)
-	cfg, err = defaultConfig(cfgPath, myID, evLogger)
-	if err != nil {
-		mu.Unlock()
-		return err
+	// Load existing config to preserve sync state, or create new on first launch
+	if _, statErr := os.Stat(cfgPath); statErr == nil {
+		cfg, _, err = config.Load(cfgPath, myID, evLogger)
+		if err != nil {
+			addEvent(fmt.Sprintf("Config load failed, recreating: %v", err))
+			cfg, err = defaultConfig(cfgPath, myID, evLogger)
+			if err != nil {
+				mu.Unlock()
+				return err
+			}
+		}
+	} else {
+		cfg, err = defaultConfig(cfgPath, myID, evLogger)
+		if err != nil {
+			mu.Unlock()
+			return err
+		}
 	}
 
 	// Start config service - Syncthing's cfg.Modify() sends to a queue

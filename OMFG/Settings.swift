@@ -157,8 +157,13 @@ final class SettingsViewController: UIViewController {
 
     @objc private func handleSwipeUp() { onComplete?() }
 
-    @objc private func copyDeviceID() {
+    @objc private func copyDeviceID(_ sender: UIButton) {
         UIPasteboard.general.string = fullDeviceID
+        let original = sender.titleLabel?.text
+        sender.setTitle("Copied", for: .normal)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            sender.setTitle(original, for: .normal)
+        }
     }
 
     private func updateLogView() {

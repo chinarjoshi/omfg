@@ -146,15 +146,10 @@ final class EditorViewController: UIViewController {
     private var currentState: NavigationState
     private var currentFilePath: URL?
 
-    // Inline auto-save
+    // Auto-save
     private var pendingSaveWorkItem: DispatchWorkItem?
     private let saveQueue = DispatchQueue(label: "autosave", qos: .utility)
-
-    // Inline file watcher
-    private var watchedFileDescriptor: Int32 = -1
-    private var fileWatchSource: DispatchSourceFileSystemObject?
-    private var lastModificationDate: Date?
-    private var isReloadingFromDisk = false
+    private var lastSavedContent: String = ""
 
     // Elastic pull navigation
     private let overscrollThreshold: CGFloat = 25
@@ -191,7 +186,6 @@ final class EditorViewController: UIViewController {
     }
 
     deinit {
-        stopWatchingFile()
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -380,18 +374,19 @@ final class EditorViewController: UIViewController {
         } else {
             content = ""
         }
+        pendingSaveWorkItem?.cancel()
+        pendingSaveWorkItem = nil
+        lastSavedContent = content
         textStorage.replaceCharacters(in: NSRange(location: 0, length: textStorage.length), with: content)
         textView.contentOffset = .zero
-
-        if let path = currentFilePath {
-            watchFile(path)
-        }
     }
 
     private func saveCurrentNoteIfNeeded() {
         guard let path = currentFilePath else { return }
         flushSaveImmediately()
-        try? textStorage.string.write(to: path, atomically: true, encoding: .utf8)
+        let content = textStorage.string
+        lastSavedContent = content
+        try? content.write(to: path, atomically: true, encoding: .utf8)
     }
 
     func returnFromSettings() {
@@ -404,8 +399,10 @@ final class EditorViewController: UIViewController {
     // MARK: - Auto Save
 
     private func scheduleAutoSave(content: String, to url: URL) {
+        guard content != lastSavedContent else { return }
         pendingSaveWorkItem?.cancel()
-        let workItem = DispatchWorkItem {
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.lastSavedContent = content
             try? content.write(to: url, atomically: true, encoding: .utf8)
         }
         pendingSaveWorkItem = workItem
@@ -417,69 +414,21 @@ final class EditorViewController: UIViewController {
         pendingSaveWorkItem = nil
     }
 
-    // MARK: - File Watching
-
-    private func watchFile(_ url: URL) {
-        stopWatchingFile()
-
-        watchedFileDescriptor = open(url.path, O_EVTONLY)
-        guard watchedFileDescriptor >= 0 else { return }
-
-        lastModificationDate = modificationDate(for: url)
-
-        fileWatchSource = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: watchedFileDescriptor,
-            eventMask: [.write, .rename],
-            queue: .main
-        )
-
-        fileWatchSource?.setEventHandler { [weak self] in
-            self?.handleFileEvent(url)
-        }
-
-        fileWatchSource?.setCancelHandler { [weak self] in
-            if let fd = self?.watchedFileDescriptor, fd >= 0 {
-                close(fd)
-            }
-        }
-
-        fileWatchSource?.resume()
-    }
-
-    private func stopWatchingFile() {
-        fileWatchSource?.cancel()
-        fileWatchSource = nil
-        watchedFileDescriptor = -1
-    }
-
-    private func handleFileEvent(_ url: URL) {
-        let currentDate = modificationDate(for: url)
-        guard currentDate != lastModificationDate else { return }
-        lastModificationDate = currentDate
-        reloadFromDisk()
-
-        // Re-establish watcher — atomic writes (rename) invalidate the file descriptor
-        watchFile(url)
-    }
-
-    private func modificationDate(for url: URL) -> Date? {
-        try? FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate] as? Date
-    }
-
     func reloadFromDisk() {
         guard let path = currentFilePath,
-              let content = try? String(contentsOf: path, encoding: .utf8) else { return }
+              let content = try? String(contentsOf: path, encoding: .utf8),
+              content != lastSavedContent else { return }
 
-        isReloadingFromDisk = true
+        pendingSaveWorkItem?.cancel()
+        pendingSaveWorkItem = nil
+        lastSavedContent = content
         let currentSelection = textView.selectedRange
         textStorage.replaceCharacters(in: NSRange(location: 0, length: textStorage.length), with: content)
 
-        // Clamp selection to valid range
         let maxLocation = textStorage.length
         let clampedLocation = min(currentSelection.location, maxLocation)
         let clampedLength = min(currentSelection.length, maxLocation - clampedLocation)
         textView.selectedRange = NSRange(location: clampedLocation, length: clampedLength)
-        isReloadingFromDisk = false
     }
 
     // MARK: - Table Auto-Formatting
@@ -564,7 +513,7 @@ extension EditorViewController: UITextViewDelegate {
     }
 
     func textViewDidChange(_ textView: UITextView) {
-        guard let path = currentFilePath, !isReloadingFromDisk else { return }
+        guard let path = currentFilePath else { return }
         scheduleAutoSave(content: textStorage.string, to: path)
 
         // Workout transformation on double newline
