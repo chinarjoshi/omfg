@@ -437,9 +437,24 @@ final class EditorViewController: UIViewController {
         let localChanged = editorContent != lastSyncedContent
         let remoteChanged = diskContent != lastSyncedContent
 
-        if localChanged {
-            // Local edits exist — save them (local wins if both changed;
-            // Syncthing creates conflict file for remote version)
+        if localChanged && remoteChanged {
+            guard editorContent != diskContent else {
+                lastSyncedContent = editorContent
+                return
+            }
+            let merged = Self.merge(base: lastSyncedContent, local: editorContent, remote: diskContent)
+            lastSyncedContent = merged
+            try? merged.write(to: path, atomically: true, encoding: .utf8)
+            if merged != editorContent {
+                let sel = textView.selectedRange
+                textStorage.replaceCharacters(in: NSRange(location: 0, length: textStorage.length), with: merged)
+                let max = textStorage.length
+                textView.selectedRange = NSRange(
+                    location: min(sel.location, max),
+                    length: min(sel.length, max - min(sel.location, max))
+                )
+            }
+        } else if localChanged {
             guard editorContent != diskContent else {
                 lastSyncedContent = editorContent
                 return
@@ -447,7 +462,6 @@ final class EditorViewController: UIViewController {
             lastSyncedContent = editorContent
             try? editorContent.write(to: path, atomically: true, encoding: .utf8)
         } else if remoteChanged {
-            // Only remote changed — reload
             lastSyncedContent = diskContent
             let sel = textView.selectedRange
             textStorage.replaceCharacters(in: NSRange(location: 0, length: textStorage.length), with: diskContent)
@@ -457,6 +471,40 @@ final class EditorViewController: UIViewController {
                 length: min(sel.length, max - min(sel.location, max))
             )
         }
+    }
+
+    static func merge(base: String, local: String, remote: String) -> String {
+        let baseLines = base.components(separatedBy: "\n")
+        let localLines = local.components(separatedBy: "\n")
+        let remoteLines = remote.components(separatedBy: "\n")
+
+        var prefixLen = 0
+        let minPrefix = min(baseLines.count, min(localLines.count, remoteLines.count))
+        while prefixLen < minPrefix
+            && baseLines[prefixLen] == localLines[prefixLen]
+            && baseLines[prefixLen] == remoteLines[prefixLen] {
+            prefixLen += 1
+        }
+
+        var suffixLen = 0
+        let maxSuffix = min(baseLines.count - prefixLen,
+                            min(localLines.count - prefixLen, remoteLines.count - prefixLen))
+        while suffixLen < maxSuffix
+            && baseLines[baseLines.count - 1 - suffixLen] == localLines[localLines.count - 1 - suffixLen]
+            && baseLines[baseLines.count - 1 - suffixLen] == remoteLines[remoteLines.count - 1 - suffixLen] {
+            suffixLen += 1
+        }
+
+        let prefix = Array(baseLines.prefix(prefixLen))
+        let suffix = suffixLen > 0 ? Array(baseLines.suffix(suffixLen)) : []
+        let remoteMiddle = Array(remoteLines[prefixLen ..< (remoteLines.count - suffixLen)])
+        let localMiddle = Array(localLines[prefixLen ..< (localLines.count - suffixLen)])
+
+        var merged = prefix
+        merged += remoteMiddle
+        merged += localMiddle
+        merged += suffix
+        return merged.joined(separator: "\n")
     }
 
     /// Schedule a sync after a short debounce (called on keypress).
