@@ -93,6 +93,27 @@ final class OrgTextStorage: NSTextStorage {
         endEditing()
     }
 
+    override func replaceCharacters(in range: NSRange, with attrString: NSAttributedString) {
+        beginEditing()
+        backingStore.replaceCharacters(in: range, with: attrString)
+        edited([.editedCharacters, .editedAttributes], range: range, changeInLength: attrString.length - range.length)
+        endEditing()
+    }
+
+    /// Returns string content with attachment characters replaced by their raw text.
+    var fileContent: String {
+        var result = ""
+        let text = string as NSString
+        enumerateAttribute(.attachment, in: NSRange(location: 0, length: length), options: []) { value, range, _ in
+            if let attachment = value as? WorkoutTableAttachment {
+                result += attachment.rawText
+            } else {
+                result += text.substring(with: range)
+            }
+        }
+        return result
+    }
+
     override func setAttributes(_ attrs: [NSAttributedString.Key: Any]?, range: NSRange) {
         beginEditing()
         backingStore.setAttributes(attrs, range: range)
@@ -384,7 +405,7 @@ final class EditorViewController: UIViewController {
     private func saveCurrentNoteIfNeeded() {
         guard let path = currentFilePath else { return }
         flushSaveImmediately()
-        let content = textStorage.string
+        let content = textStorage.fileContent
         lastSavedContent = content
         try? content.write(to: path, atomically: true, encoding: .utf8)
     }
@@ -512,14 +533,29 @@ extension EditorViewController: UITextViewDelegate {
 
     }
 
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        // Backspace into attachment: restore raw text
+        if text.isEmpty && range.length == 1 && range.location < textStorage.length {
+            let attrs = textStorage.attributes(at: range.location, effectiveRange: nil)
+            if let attachment = attrs[.attachment] as? WorkoutTableAttachment {
+                textStorage.replaceCharacters(in: range, with: attachment.rawText)
+                textView.selectedRange = NSRange(location: range.location + (attachment.rawText as NSString).length, length: 0)
+                if let path = currentFilePath {
+                    scheduleAutoSave(content: textStorage.fileContent, to: path)
+                }
+                return false
+            }
+        }
+        return true
+    }
+
     func textViewDidChange(_ textView: UITextView) {
         guard let path = currentFilePath else { return }
-        scheduleAutoSave(content: textStorage.string, to: path)
 
         // Workout transformation on double newline
-        if let tableRange = workoutTransformer.textChanged() {
-            formatTable(in: tableRange)
-        }
+        workoutTransformer.textChanged()
+
+        scheduleAutoSave(content: textStorage.fileContent, to: path)
 
         if let selectedRange = textView.selectedTextRange {
             var caretRect = textView.caretRect(for: selectedRange.end)
