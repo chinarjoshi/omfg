@@ -55,8 +55,7 @@ final class SettingsViewController: UIViewController {
         copyButton.setTitle("Copy", for: .normal)
         copyButton.titleLabel?.font = .systemFont(ofSize: 14)
         copyButton.addTarget(self, action: #selector(copyDeviceID), for: .touchUpInside)
-        copyButton.setContentHuggingPriority(.required, for: .horizontal)
-        copyButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        copyButton.widthAnchor.constraint(equalToConstant: 46).isActive = true
         deviceIDRow.addArrangedSubview(copyButton)
 
         stack.addArrangedSubview(deviceIDRow)
@@ -161,7 +160,7 @@ final class SettingsViewController: UIViewController {
         UIPasteboard.general.string = fullDeviceID
         let original = sender.titleLabel?.text
         let originalColor = sender.titleColor(for: .normal)
-        sender.setTitle("Copied!", for: .normal)
+        sender.setTitle("Done", for: .normal)
         sender.setTitleColor(.systemGreen, for: .normal)
         UIView.animate(withDuration: 0.1, animations: {
             sender.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
