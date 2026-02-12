@@ -138,7 +138,15 @@ final class OrgTextStorage: NSTextStorage {
             .font: UIFont.systemFont(ofSize: 16),
             .foregroundColor: UIColor.white
         ]
+        // Save attachments before overwriting — setAttributes strips all existing attributes
+        var attachments: [(NSTextAttachment, NSRange)] = []
+        backingStore.enumerateAttribute(.attachment, in: range, options: []) { value, r, _ in
+            if let a = value as? NSTextAttachment { attachments.append((a, r)) }
+        }
         backingStore.setAttributes(defaultAttrs, range: range)
+        for (a, r) in attachments {
+            backingStore.addAttribute(.attachment, value: a, range: r)
+        }
     }
 
     private func applySyntaxHighlighting(in range: NSRange) {
@@ -182,6 +190,7 @@ final class EditorViewController: UIViewController {
 
     // Workout transformation
     private lazy var workoutTransformer = WorkoutTransformer(textStorage: textStorage)
+    private var enterOnEmptyLine = false
 
 
     var onRequestSettings: (() -> Void)?
@@ -622,14 +631,37 @@ extension EditorViewController: UITextViewDelegate {
     }
 
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-        // Backspace into attachment: restore raw text
-        if text.isEmpty && range.length == 1 && range.location < textStorage.length {
-            let attrs = textStorage.attributes(at: range.location, effectiveRange: nil)
-            if let attachment = attrs[.attachment] as? WorkoutTableAttachment {
-                textStorage.replaceCharacters(in: range, with: attachment.rawText)
-                textView.selectedRange = NSRange(location: range.location + (attachment.rawText as NSString).length, length: 0)
-                scheduleSyncSoon()
-                return false
+        // Track Enter on empty line for workout rendering
+        if text == "\n" {
+            let lineRange = (textStorage.string as NSString).lineRange(for: NSRange(location: range.location, length: 0))
+            let lineContent = (textStorage.string as NSString).substring(with: lineRange).trimmingCharacters(in: .newlines)
+            enterOnEmptyLine = lineContent.isEmpty
+        } else {
+            enterOnEmptyLine = false
+        }
+
+        // Backspace near attachment: restore raw text
+        if text.isEmpty && range.length == 1 {
+            // Backspacing line below attachment → de-render
+            if range.location > 0 {
+                let prevAttrs = textStorage.attributes(at: range.location - 1, effectiveRange: nil)
+                if let attachment = prevAttrs[.attachment] as? WorkoutTableAttachment {
+                    let attachmentRange = NSRange(location: range.location - 1, length: 1)
+                    textStorage.replaceCharacters(in: attachmentRange, with: attachment.rawText)
+                    textView.selectedRange = NSRange(location: range.location - 1 + (attachment.rawText as NSString).length, length: 0)
+                    scheduleSyncSoon()
+                    return false
+                }
+            }
+            // Backspacing the attachment itself → de-render
+            if range.location < textStorage.length {
+                let attrs = textStorage.attributes(at: range.location, effectiveRange: nil)
+                if let attachment = attrs[.attachment] as? WorkoutTableAttachment {
+                    textStorage.replaceCharacters(in: range, with: attachment.rawText)
+                    textView.selectedRange = NSRange(location: range.location + (attachment.rawText as NSString).length, length: 0)
+                    scheduleSyncSoon()
+                    return false
+                }
             }
         }
         return true
@@ -638,7 +670,10 @@ extension EditorViewController: UITextViewDelegate {
     func textViewDidChange(_ textView: UITextView) {
         guard !isSyncing else { return }
 
-        workoutTransformer.textChanged()
+        if let newCursor = workoutTransformer.textChanged(renderAllowed: enterOnEmptyLine, cursorPosition: textView.selectedRange.location) {
+            textView.selectedRange = NSRange(location: min(newCursor, textStorage.length), length: 0)
+        }
+        enterOnEmptyLine = false
         scheduleSyncSoon()
 
         if let selectedRange = textView.selectedTextRange {

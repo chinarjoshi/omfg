@@ -123,17 +123,19 @@ final class WorkoutTransformer {
     }
 
     /// Called on text change. Replaces workout paragraphs with rendered table attachments.
-    func textChanged() {
-        guard !isTransforming else { return }
-        guard let textStorage = textStorage else { return }
+    /// Returns cursor position to set after rendering, or nil if no render happened.
+    func textChanged(renderAllowed: Bool = true, cursorPosition: Int? = nil) -> Int? {
+        guard renderAllowed, !isTransforming else { return nil }
+        guard let textStorage = textStorage else { return nil }
         let text = textStorage.string as NSString
 
-        guard text.length >= 2 else { return }
-        let lastTwo = text.substring(with: NSRange(location: text.length - 2, length: 2))
-        guard lastTwo == "\n\n" else { return }
+        let checkPos = cursorPosition ?? text.length
+        guard checkPos >= 2 else { return nil }
+        let twoChars = text.substring(with: NSRange(location: checkPos - 2, length: 2))
+        guard twoChars == "\n\n" else { return nil }
 
-        let paragraphEnd = text.length - 2
-        guard paragraphEnd > 0 else { return }
+        let paragraphEnd = checkPos - 2
+        guard paragraphEnd > 0 else { return nil }
 
         // Find paragraph start (previous \n\n or start of text)
         var paragraphStart = paragraphEnd
@@ -150,28 +152,30 @@ final class WorkoutTransformer {
         }
 
         let range = NSRange(location: paragraphStart, length: paragraphEnd - paragraphStart)
-        guard range.length > 0 else { return }
+        guard range.length > 0 else { return nil }
 
         let paragraph = text.substring(with: range)
 
         // Skip if already an attachment or table
-        guard !paragraph.contains("\u{FFFC}") else { return }
-        guard !paragraph.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("|") else { return }
+        guard !paragraph.contains("\u{FFFC}") else { return nil }
+        guard !paragraph.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("|") else { return nil }
 
         let results = transform(paragraph)
-        guard let first = results.first else { return }
+        guard let first = results.first else { return nil }
 
         switch first {
         case .prose:
-            return
+            return nil
         case .workout(let parseResult):
-            guard parseResult.hasExercises else { return }
+            guard parseResult.hasExercises else { return nil }
             let attachment = WorkoutTableAttachment(rawText: paragraph, parseResult: parseResult)
             let attachmentString = NSAttributedString(attachment: attachment)
 
             isTransforming = true
             textStorage.replaceCharacters(in: range, with: attachmentString)
             isTransforming = false
+            // Cursor goes to line after attachment: attachment is at range.location, +1 for the char, +1 for the \n after
+            return range.location + 2
         }
     }
 }
