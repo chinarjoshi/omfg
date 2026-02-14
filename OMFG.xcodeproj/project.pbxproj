@@ -11,9 +11,10 @@
 		A1000021 /* Editor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000021; };
 		A1000022 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000022; };
 		A1000024 /* QuickCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000024; };
-		A1000025 /* WorkoutTransformer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000025; };
-		A1000026 /* PhotoGallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000026; };
-		C1000001 /* WorkoutLiner in Frameworks */ = {isa = PBXBuildFile; productRef = C2000001; };
+		A1000025 /* Snap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000025; };
+		A1000026 /* Search.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000026; };
+		A1000027 /* PhotoGallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000027; };
+		C1000001 /* Snap in Frameworks */ = {isa = PBXBuildFile; productRef = C2000001; };
 		A100000F /* Syncthing.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000011; };
 		A1000010 /* Syncthing.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A2000011; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A1000023 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000023; };
@@ -62,8 +63,9 @@
 		A2000021 /* Editor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editor.swift; sourceTree = "<group>"; };
 		A2000022 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		A2000024 /* QuickCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCapture.swift; sourceTree = "<group>"; };
-		A2000025 /* WorkoutTransformer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTransformer.swift; sourceTree = "<group>"; };
-		A2000026 /* PhotoGallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGallery.swift; sourceTree = "<group>"; };
+		A2000025 /* Snap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap.swift; sourceTree = "<group>"; };
+		A2000026 /* Search.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Search.swift; sourceTree = "<group>"; };
+		A2000027 /* PhotoGallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGallery.swift; sourceTree = "<group>"; };
 		A2000023 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A200000F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000010 /* OMFG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OMFG.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -79,7 +81,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A100000F /* Syncthing.xcframework in Frameworks */,
-				C1000001 /* WorkoutLiner in Frameworks */,
+				C1000001 /* Snap in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,8 +120,9 @@
 				A2000021 /* Editor.swift */,
 				A2000022 /* Settings.swift */,
 				A2000024 /* QuickCapture.swift */,
-				A2000025 /* WorkoutTransformer.swift */,
-				A2000026 /* PhotoGallery.swift */,
+				A2000025 /* Snap.swift */,
+				A2000026 /* Search.swift */,
+				A2000027 /* PhotoGallery.swift */,
 				A2000023 /* Assets.xcassets */,
 				A200000F /* Info.plist */,
 			);
@@ -164,7 +167,7 @@
 			);
 			name = OMFG;
 			packageProductDependencies = (
-				C2000001 /* WorkoutLiner */,
+				C2000001 /* Snap */,
 			);
 			productName = OMFG;
 			productReference = A2000010 /* OMFG.app */;
@@ -216,7 +219,7 @@
 			mainGroup = A4000001;
 			productRefGroup = A4000010 /* Products */;
 			packageReferences = (
-				C3000001 /* XCLocalSwiftPackageReference "WorkoutLiner" */,
+				C3000001 /* XCLocalSwiftPackageReference "Snap" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -255,8 +258,9 @@
 				A1000021 /* Editor.swift in Sources */,
 				A1000022 /* Settings.swift in Sources */,
 				A1000024 /* QuickCapture.swift in Sources */,
-				A1000025 /* WorkoutTransformer.swift in Sources */,
-				A1000026 /* PhotoGallery.swift in Sources */,
+				A1000025 /* Snap.swift in Sources */,
+				A1000026 /* Search.swift in Sources */,
+				A1000027 /* PhotoGallery.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -539,16 +543,16 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		C3000001 /* XCLocalSwiftPackageReference "WorkoutLiner" */ = {
+		C3000001 /* XCLocalSwiftPackageReference "Snap" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = WorkoutLiner;
+			relativePath = Snap;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		C2000001 /* WorkoutLiner */ = {
+		C2000001 /* Snap */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = WorkoutLiner;
+			productName = Snap;
 		};
 /* End XCSwiftPackageProductDependency section */
 

@@ -3,7 +3,7 @@ import UIKit
 // MARK: - Navigation State
 
 enum NoteLevel: Int {
-    case daily, weekly, monthly, settings
+    case search, daily, weekly, monthly, settings
 
     var next: NoteLevel? { NoteLevel(rawValue: rawValue + 1) }
     var previous: NoteLevel? { NoteLevel(rawValue: rawValue - 1) }
@@ -100,13 +100,13 @@ final class OrgTextStorage: NSTextStorage {
         endEditing()
     }
 
-    /// Returns string content with attachment characters replaced by their raw text.
+    /// Returns string content with attachment characters replaced by their raw text wrapped in :SNAP:/:END:.
     var fileContent: String {
         var result = ""
         let text = string as NSString
         enumerateAttribute(.attachment, in: NSRange(location: 0, length: length), options: []) { value, range, _ in
             if let attachment = value as? WorkoutTableAttachment {
-                result += attachment.rawText
+                result += ":SNAP:\n\(attachment.rawText)\n:END:"
             } else {
                 result += text.substring(with: range)
             }
@@ -138,7 +138,15 @@ final class OrgTextStorage: NSTextStorage {
             .font: UIFont.systemFont(ofSize: 16),
             .foregroundColor: UIColor.white
         ]
+        // Save attachments before overwriting — setAttributes strips all existing attributes
+        var attachments: [(NSTextAttachment, NSRange)] = []
+        backingStore.enumerateAttribute(.attachment, in: range, options: []) { value, r, _ in
+            if let a = value as? NSTextAttachment { attachments.append((a, r)) }
+        }
         backingStore.setAttributes(defaultAttrs, range: range)
+        for (a, r) in attachments {
+            backingStore.addAttribute(.attachment, value: a, range: r)
+        }
     }
 
     private func applySyntaxHighlighting(in range: NSRange) {
@@ -182,10 +190,16 @@ final class EditorViewController: UIViewController {
     private var previousTableRange: NSRange?
 
     // Workout transformation
-    private lazy var workoutTransformer = WorkoutTransformer(textStorage: textStorage)
-
+    private lazy var workoutTransformer = WorkoutTransformer(
+        textStorage: textStorage,
+        baseDirectory: baseDirectory,
+        filePath: { [weak self] in self?.currentFilePath }
+    )
+    private var enterOnEmptyLine = false
 
     var onRequestSettings: (() -> Void)?
+    var onRequestSearch: (() -> Void)?
+    var savedCursorRange: NSRange?
 
     init(baseDirectory: URL, initialState: NavigationState = .today()) {
         self.baseDirectory = baseDirectory
@@ -202,6 +216,7 @@ final class EditorViewController: UIViewController {
         self.titleLabel = UILabel()
 
         super.init(nibName: nil, bundle: nil)
+        WorkoutIndexManager.shared.configure(baseDirectory: baseDirectory)
     }
 
     required init?(coder: NSCoder) {
@@ -351,6 +366,15 @@ final class EditorViewController: UIViewController {
             // Make scroll view's pan wait for swipe to fail
             textView.panGestureRecognizer.require(toFail: swipe)
         }
+
+        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUp))
+        swipeUp.direction = .up
+        view.addGestureRecognizer(swipeUp)
+    }
+
+    @objc private func handleSwipeUp() {
+        guard currentState.level == .daily else { return }
+        navigateToPreviousLevel()
     }
 
     @objc private func handleHorizontalSwipe(_ gesture: UISwipeGestureRecognizer) {
@@ -385,7 +409,7 @@ final class EditorViewController: UIViewController {
         case .monthly:
             folder = "monthly"
             subfolder = String(format: "%04d-%02d", c.year!, c.month!)
-        case .settings:
+        case .settings, .search:
             return nil
         }
         return baseDirectory
@@ -399,7 +423,7 @@ final class EditorViewController: UIViewController {
         case .daily: return calendar.date(byAdding: .day, value: -1, to: date) ?? date
         case .weekly: return calendar.date(byAdding: .weekOfYear, value: -1, to: date) ?? date
         case .monthly: return calendar.date(byAdding: .month, value: -1, to: date) ?? date
-        case .settings: return date
+        case .settings, .search: return date
         }
     }
 
@@ -408,7 +432,7 @@ final class EditorViewController: UIViewController {
         case .daily: return calendar.date(byAdding: .day, value: 1, to: date) ?? date
         case .weekly: return calendar.date(byAdding: .weekOfYear, value: 1, to: date) ?? date
         case .monthly: return calendar.date(byAdding: .month, value: 1, to: date) ?? date
-        case .settings: return date
+        case .settings, .search: return date
         }
     }
 
@@ -429,6 +453,8 @@ final class EditorViewController: UIViewController {
             return Self.shortMonthFormatter.string(from: state.currentDate)
         case .settings:
             return "Settings"
+        case .search:
+            return "Search"
         }
     }
 
@@ -451,6 +477,10 @@ final class EditorViewController: UIViewController {
             onRequestSettings?()
             return
         }
+        guard state.level != .search else {
+            onRequestSearch?()
+            return
+        }
 
         currentFilePath = path(for: state)
         ensureNoteExists(for: state)
@@ -469,6 +499,7 @@ final class EditorViewController: UIViewController {
         textStorage.replaceCharacters(in: NSRange(location: 0, length: textStorage.length), with: content)
         isSyncing = false
         refreshGallery()
+        workoutTransformer.renderAll()
         textView.contentOffset = CGPoint(x: 0, y: -textView.contentInset.top)
     }
 
@@ -477,6 +508,66 @@ final class EditorViewController: UIViewController {
             currentState.level = .monthly
         }
         loadNote(for: currentState)
+    }
+
+    func returnFromSearch() {
+        if currentState.level == .search {
+            currentState.level = .daily
+        }
+        loadNote(for: currentState)
+    }
+
+    func insertAtSavedCursor(_ text: String) {
+        if currentState.level != .daily {
+            currentState.level = .daily
+            currentState.currentDate = Date()
+            loadNote(for: currentState)
+        }
+
+        let insertLocation: Int
+        if let saved = savedCursorRange, saved.location <= textStorage.length {
+            insertLocation = saved.location
+        } else {
+            insertLocation = textStorage.length
+        }
+
+        let insertText = text.hasSuffix("\n") ? text : text + "\n"
+        textStorage.replaceCharacters(
+            in: NSRange(location: insertLocation, length: 0),
+            with: insertText
+        )
+        textView.selectedRange = NSRange(
+            location: insertLocation + (insertText as NSString).length,
+            length: 0
+        )
+        savedCursorRange = nil
+        scheduleSyncSoon()
+    }
+
+    func loadNoteAndScroll(to state: NavigationState, lineNumber: Int?) {
+        loadNote(for: state)
+        guard let line = lineNumber else { return }
+        let text = textStorage.string as NSString
+        var currentLine = 0
+        var charIndex = 0
+        while currentLine < line && charIndex < text.length {
+            let lineRange = text.lineRange(for: NSRange(location: charIndex, length: 0))
+            charIndex = NSMaxRange(lineRange)
+            currentLine += 1
+        }
+        if charIndex <= text.length {
+            textView.selectedRange = NSRange(location: charIndex, length: 0)
+            DispatchQueue.main.async {
+                let rect = self.layoutManager.boundingRect(
+                    forGlyphRange: self.layoutManager.glyphRange(
+                        forCharacterRange: NSRange(location: charIndex, length: 0),
+                        actualCharacterRange: nil
+                    ),
+                    in: self.textContainer
+                )
+                self.textView.scrollRectToVisible(rect, animated: false)
+            }
+        }
     }
 
     // MARK: - Sync
@@ -681,14 +772,37 @@ extension EditorViewController: UITextViewDelegate {
     }
 
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-        // Backspace into attachment: restore raw text
-        if text.isEmpty && range.length == 1 && range.location < textStorage.length {
-            let attrs = textStorage.attributes(at: range.location, effectiveRange: nil)
-            if let attachment = attrs[.attachment] as? WorkoutTableAttachment {
-                textStorage.replaceCharacters(in: range, with: attachment.rawText)
-                textView.selectedRange = NSRange(location: range.location + (attachment.rawText as NSString).length, length: 0)
-                scheduleSyncSoon()
-                return false
+        // Track Enter on empty line for workout rendering
+        if text == "\n" {
+            let lineRange = (textStorage.string as NSString).lineRange(for: NSRange(location: range.location, length: 0))
+            let lineContent = (textStorage.string as NSString).substring(with: lineRange).trimmingCharacters(in: .newlines)
+            enterOnEmptyLine = lineContent.isEmpty
+        } else {
+            enterOnEmptyLine = false
+        }
+
+        // Backspace near attachment: restore raw text
+        if text.isEmpty && range.length == 1 {
+            // Backspacing line below attachment → de-render
+            if range.location > 0 {
+                let prevAttrs = textStorage.attributes(at: range.location - 1, effectiveRange: nil)
+                if let attachment = prevAttrs[.attachment] as? WorkoutTableAttachment {
+                    let attachmentRange = NSRange(location: range.location - 1, length: 1)
+                    textStorage.replaceCharacters(in: attachmentRange, with: attachment.rawText)
+                    textView.selectedRange = NSRange(location: range.location - 1 + (attachment.rawText as NSString).length, length: 0)
+                    scheduleSyncSoon()
+                    return false
+                }
+            }
+            // Backspacing the attachment itself → de-render
+            if range.location < textStorage.length {
+                let attrs = textStorage.attributes(at: range.location, effectiveRange: nil)
+                if let attachment = attrs[.attachment] as? WorkoutTableAttachment {
+                    textStorage.replaceCharacters(in: range, with: attachment.rawText)
+                    textView.selectedRange = NSRange(location: range.location + (attachment.rawText as NSString).length, length: 0)
+                    scheduleSyncSoon()
+                    return false
+                }
             }
         }
         return true
@@ -697,7 +811,10 @@ extension EditorViewController: UITextViewDelegate {
     func textViewDidChange(_ textView: UITextView) {
         guard !isSyncing else { return }
 
-        workoutTransformer.textChanged()
+        if let newCursor = workoutTransformer.textChanged(renderAllowed: enterOnEmptyLine, cursorPosition: textView.selectedRange.location) {
+            textView.selectedRange = NSRange(location: min(newCursor, textStorage.length), length: 0)
+        }
+        enterOnEmptyLine = false
         scheduleSyncSoon()
 
         if let selectedRange = textView.selectedTextRange {
@@ -759,6 +876,15 @@ extension EditorViewController: UITextViewDelegate {
             sync()
             currentState.level = level
             onRequestSettings?()
+            return
+        }
+
+        // Handle search specially
+        if level == .search {
+            sync()
+            savedCursorRange = textView.selectedRange
+            currentState.level = level
+            onRequestSearch?()
             return
         }
 

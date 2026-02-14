@@ -209,6 +209,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     private var editorViewController: EditorViewController?
     private var settingsViewController: SettingsViewController?
+    private var searchViewController: SearchViewController?
     private var backgroundSyncEndWorkItem: DispatchWorkItem?
 
     func scene(
@@ -358,7 +359,121 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         editor.onRequestSettings = { [weak self] in
             self?.transitionToSettings()
         }
+        editor.onRequestSearch = { [weak self] in
+            self?.transitionToSearch()
+        }
         return editor
+    }
+
+    // MARK: - Search Transitions
+
+    private func transitionToSearch() {
+        guard let editor = editorViewController else { return }
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+
+        let search = SearchViewController(
+            baseDirectory: documentsURL,
+            onComplete: { [weak self] in
+                self?.transitionBackFromSearch()
+            },
+            onInsert: { [weak self] rawText in
+                self?.editorViewController?.insertAtSavedCursor(rawText)
+                self?.transitionBackFromSearch()
+            },
+            onNavigate: { [weak self] filePath, lineNumber in
+                self?.navigateToFileFromSearch(filePath: filePath, lineNumber: lineNumber)
+            }
+        )
+        searchViewController = search
+
+        guard let window = window else { return }
+        let snapshot = editor.view.snapshotView(afterScreenUpdates: false)
+        window.rootViewController = search
+        if let snapshot = snapshot {
+            snapshot.frame = window.bounds
+            window.addSubview(snapshot)
+            search.view.transform = CGAffineTransform(translationX: 0, y: window.bounds.height)
+
+            UIView.animate(withDuration: 0.06, delay: 0, options: .curveEaseOut) {
+                snapshot.transform = CGAffineTransform(translationX: 0, y: -window.bounds.height)
+                search.view.transform = .identity
+            } completion: { _ in
+                snapshot.removeFromSuperview()
+            }
+        }
+    }
+
+    private func transitionBackFromSearch() {
+        guard let editor = editorViewController, let window = window else { return }
+
+        let snapshot = searchViewController?.view.snapshotView(afterScreenUpdates: false)
+        searchViewController = nil
+        editor.returnFromSearch()
+        window.rootViewController = editor
+        if let snapshot = snapshot {
+            snapshot.frame = window.bounds
+            window.addSubview(snapshot)
+            editor.view.transform = CGAffineTransform(translationX: 0, y: window.bounds.height)
+
+            UIView.animate(withDuration: 0.06, delay: 0, options: .curveEaseOut) {
+                snapshot.transform = CGAffineTransform(translationX: 0, y: -window.bounds.height)
+                editor.view.transform = .identity
+            } completion: { _ in
+                snapshot.removeFromSuperview()
+            }
+        }
+    }
+
+    private func navigateToFileFromSearch(filePath: String, lineNumber: Int?) {
+        guard let editor = editorViewController else { return }
+
+        let components = filePath.components(separatedBy: "/")
+        guard components.count == 2 else {
+            transitionBackFromSearch()
+            return
+        }
+
+        let folder = components[0]
+        let filename = (components[1] as NSString).deletingPathExtension
+        let calendar = Calendar.current
+
+        let level: NoteLevel
+        let date: Date
+
+        switch folder {
+        case "daily":
+            level = .daily
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            date = f.date(from: filename) ?? Date()
+        case "weekly":
+            level = .weekly
+            let parts = filename.components(separatedBy: "-W")
+            if parts.count == 2, let year = Int(parts[0]), let week = Int(parts[1]) {
+                var dc = DateComponents()
+                dc.yearForWeekOfYear = year
+                dc.weekOfYear = week
+                dc.weekday = 2
+                date = calendar.date(from: dc) ?? Date()
+            } else {
+                date = Date()
+            }
+        case "monthly":
+            level = .monthly
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM"
+            date = f.date(from: filename) ?? Date()
+        default:
+            transitionBackFromSearch()
+            return
+        }
+
+        searchViewController = nil
+        let state = NavigationState(level: level, currentDate: date)
+        editor.loadNoteAndScroll(to: state, lineNumber: lineNumber)
+
+        guard let window = window else { return }
+        window.rootViewController = editor
     }
 }
 
