@@ -26,3 +26,4 @@ syncthing-src/
 .DS_Store
 
 CLAUDE.md
+.worktrees
